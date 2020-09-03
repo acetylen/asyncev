@@ -12,7 +12,7 @@ setup(
         long_description=readme,
         author="Emil Tylén",
         license=license,
-        packages=find_packages(exclude=("test",)),
+        packages=find_packages(exclude=("tests",)),
         python_requires=">=3.7",
         tests_require=["aiounittest==1.4.0"],
         test_suite="pytest",
