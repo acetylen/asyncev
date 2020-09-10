@@ -2,7 +2,7 @@ AsyncEv: asynchronous event objects
 ===================================
 
 AsyncEv leverages `asyncio` to create events that can be subscribed to and waited for.
-Events are arbitrary objects.
+Events are arbitrary objects that inherit from `asyncev.BaseEvent` (which currently has no functionality, but it's for future-proofing).
 
 
 ```python
