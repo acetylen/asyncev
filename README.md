@@ -1,7 +1,8 @@
-AsyncEv: asynchronous named events
-==================================
+AsyncEv: asynchronous event objects
+===================================
 
-AsyncEv leverages `asyncio` to create named events that can be subscribed to and waited for.
+AsyncEv leverages `asyncio` to create events that can be subscribed to and waited for.
+Events are arbitrary objects.
 
 
 ```python
