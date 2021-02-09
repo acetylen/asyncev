@@ -17,7 +17,7 @@ class MyEvent(asyncev.BaseEvent):
 
 # Create a handler
 async def on_myevent(ev: MyEvent):
-    print("Got a MyEvent with the value {ev.value}!")
+    print(f"Got a MyEvent with the value {ev.value}!")
 
 asyncev.bind(MyEvent, on_myevent)
 
