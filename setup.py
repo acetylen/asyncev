@@ -14,6 +14,5 @@ setup(
         license=license,
         packages=find_packages(exclude=("tests",)),
         python_requires=">=3.7",
-        tests_require=["aiounittest==1.4.0"],
-        test_suite="pytest",
+        tests_require=["aiounittest>=1.4.0;python_version<'3.8'"],
 )

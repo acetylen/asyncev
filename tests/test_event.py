@@ -1,9 +1,13 @@
 from dataclasses import dataclass
-from aiounittest import AsyncTestCase
 from weakref import ref, WeakMethod
 import asyncio
 import logging
 import asyncev
+
+try:
+    from unittest import IsolatedAsyncioTestCase
+except ImportError:  # python 3.7 or lower
+    from aiounittest import AsyncTestCase as IsolatedAsyncioTestCase
 
 yield_for = 0.01  # how long to allow the event handler to run after setup
 
@@ -13,7 +17,7 @@ log = logging.getLogger(__name__)
 class ValueEvent(asyncev.BaseEvent):
     value: str
 
-class EventTest(AsyncTestCase):
+class EventTest(IsolatedAsyncioTestCase):
     def setUp(self):
         self.eventhandler = asyncev.AsyncEv()
         self.arg_value = None
