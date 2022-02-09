@@ -2,8 +2,8 @@ AsyncEv: asynchronous event objects
 ===================================
 
 AsyncEv leverages `asyncio` to create events that can be subscribed to and waited for.
-Events are arbitrary objects that inherit from `asyncev.BaseEvent` (which currently has no functionality, but it's for future-proofing).
 
+## Usage
 
 ```python
 import asyncio
@@ -28,3 +28,8 @@ async def main():
 asyncio.run(main())
 ```
 
+## Testing
+
+```shell
+$ poetry run python -m unittest
+```

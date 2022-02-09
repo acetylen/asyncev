@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "asyncev"
 version = "0.2.0"
-description = "Asynchronous named events for python"
+description = "Dependency-free asynchronous named events for python"
 authors = ["Emil Tylén <emil@tylen.se>"]
 license = "MIT"
 readme = "README.md"
