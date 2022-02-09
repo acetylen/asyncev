@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "asyncev"
+version = "0.2.0"
+description = "Asynchronous named events for python"
+authors = ["Emil Tylén <emil@tylen.se>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+aiounittest = { version = "^1.4.0", python = "<3.8" }
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
