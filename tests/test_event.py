@@ -5,6 +5,7 @@ import asyncio
 import logging
 import asyncev
 
+yield_for = 0.01  # how long to allow the event handler to run after setup
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class EventTest(AsyncTestCase):
         self.assertIn(ref(function), self.eventhandler.events[ValueEvent])
 
         self.eventhandler.emit(ValueEvent(self.arg_input))
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(yield_for)
 
         self.assertEqual(self.arg_input, self.arg_value)
 
@@ -64,7 +65,7 @@ class EventTest(AsyncTestCase):
         self.assertIsNone(obj.arg_value)
 
         self.eventhandler.emit(ValueEvent(self.arg_input))
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(yield_for)
 
         self.assertEqual(self.arg_input, obj.arg_value)
 
@@ -81,7 +82,7 @@ class EventTest(AsyncTestCase):
 
         self.assertFalse(self.method_called)
         self.eventhandler.emit(ValueEvent(self.arg_input))
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(yield_for)
 
         self.assertTrue(self.arg_value, self.arg_input)
         self.assertFalse(self.eventhandler.events[ValueEvent])  # check if empty
@@ -121,7 +122,7 @@ class EventTest(AsyncTestCase):
             self.assertEqual(sorted(results), list(range(10, 20)))
 
         self.eventhandler.gather_for(ValueEvent(10), gatherer)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(yield_for)
 
         self.assertTrue(self.method_called)
 
@@ -142,7 +143,7 @@ class EventTest(AsyncTestCase):
         self.assertIsNone(list(self.eventhandler.events[ValueEvent])[0]())
 
         self.eventhandler.emit(ValueEvent(2)) #prune is only called after emit
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(yield_for)
         self.assertFalse(self.eventhandler.events[ValueEvent])
 
     def test_non_async_handler(self):
