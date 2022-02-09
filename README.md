@@ -31,5 +31,5 @@ asyncio.run(main())
 ## Testing
 
 ```shell
-$ python -m unittest
+$ poetry run python -m unittest
 ```
