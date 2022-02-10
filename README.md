@@ -28,3 +28,8 @@ async def main():
 asyncio.run(main())
 ```
 
+## Testing
+
+```shell
+$ python -m unittest
+```
