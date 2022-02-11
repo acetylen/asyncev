@@ -3,7 +3,16 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from inspect import iscoroutinefunction, ismethod
-from typing import Any, Awaitable, Callable, List, Type, TypeVar
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    NewType,
+    Sequence,
+    Type,
+    Union,
+)
 from weakref import WeakMethod, ref
 
 Coroutine = Callable[..., Awaitable]
@@ -24,7 +33,7 @@ class BaseEvent:
             raise Exception("BaseEvent should not be instantiated directly")
 
 
-Event = TypeVar("Event", bound=BaseEvent)
+Event = NewType("Event", bound=BaseEvent)
 
 
 class AsyncEv:
@@ -82,7 +91,7 @@ class AsyncEv:
         log.debug("Scheduling emit(%s)", event)
         asyncio.create_task(self._emit(event))
 
-    async def gather(self, event: Event) -> List[Any]:
+    async def gather(self, event: Event) -> Sequence[Any]:
         """emit an event, wait for all handlers to run, and return the result."""
 
         log.debug("Gather(%s)", event)
@@ -125,6 +134,40 @@ class AsyncEv:
         await ev.wait()
         self.unbind(event, wait_trigger)
         return out
+
+    def event_iterator(
+        self, events: Union[Event, Sequence[Event]]
+    ) -> AsyncIterator[Event]:
+        if isinstance(events, BaseEvent):
+            events = [events]
+        return AsyncEventQueue(self, events)
+
+
+class AsyncEventQueue:
+    def __init__(self, asyncev: AsyncEv, events: Sequence[Event]):
+        self._queue = asyncio.Queue()
+        self._instance = asyncev
+        for event in events:
+            asyncev.bind(event, self.__handle)
+
+    def __del__(self):
+        f = funcref(self.__handle)
+        prunelist = []
+        for event, funcs in self._instance.events.items():
+            if f in funcs:
+                prunelist.append(event)
+
+        for event in prunelist:
+            self._instance.unbind(event, self.__handle)
+
+    async def __handle(self, event: Event):
+        self._queue.put_nowait(event)
+
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return self.queue.get()
 
 
 # Default event handler exposed through the methods in event.__init__
