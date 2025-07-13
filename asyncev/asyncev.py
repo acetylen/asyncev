@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from collections import defaultdict
 from dataclasses import dataclass
 from inspect import iscoroutinefunction, ismethod
 from collections.abc import Awaitable
@@ -32,8 +31,8 @@ class AsyncEv:
     """
 
     def __init__(self):
-        self.events = defaultdict(set)
-        self.writelock = asyncio.Lock()
+        self.events: dict[type[BaseEvent], set[ReferenceType[Coroutine]]] = {}
+        self.writelock: dict[type[BaseEvent], asyncio.Lock] = {}
         # FIXME: Writelock can't be used in non-async methods...
 
     def bind(self, event: type[BaseEvent], listener: Coroutine):
@@ -42,6 +41,9 @@ class AsyncEv:
             raise TypeError("Event listeners must be async!")
 
         log.debug("Adding binding: %r -> %s", event, listener)
+        if event not in self.events:
+            self.events[event] = set()
+            self.writelock[event] = asyncio.Lock()
         self.events[event].add(funcref(listener))
 
     def unbind(self, event: type[BaseEvent], listener: Coroutine):
@@ -60,7 +62,7 @@ class AsyncEv:
         callbacks: list[Awaitable[Any]] = []
         decayed = 0
         t = type(event)
-        async with self.writelock:
+        async with self.writelock[t]:
             for taskref in self.events[t]:
                 task = taskref()
                 if task is None:
@@ -102,7 +104,7 @@ class AsyncEv:
     async def _prune(self, event: type[BaseEvent]):
         """Find and remove dead handlers for {event}"""
         diff = {r for r in self.events[event] if r() is None}
-        async with self.writelock:
+        async with self.writelock[event]:
             self.events[event] -= diff
 
     async def wait_for(self, event: type[BaseEvent]) -> BaseEvent:
