@@ -3,12 +3,16 @@ name = "asyncev"
 version = "1.0"
 description = "Asynchronous named events with no dependencies"
 authors = [
-  { name = "Emil Tylén", email = "a@b.c"}
+  { name = "Emil Tylén", email = ""}
 ]
 readme="README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/acetylen/asyncev"
+Issues = "https://github.com/acetylen/asyncev/issues"
 
 [dependency-groups]
 dev = [
