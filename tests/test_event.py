@@ -4,10 +4,7 @@ import asyncio
 import logging
 import asyncev
 
-try:
-    from unittest import IsolatedAsyncioTestCase
-except ImportError:  # python 3.7 or lower
-    from aiounittest import AsyncTestCase as IsolatedAsyncioTestCase
+from unittest import IsolatedAsyncioTestCase
 
 yield_for = 0.01  # how long to allow the event handler to run after setup
 
