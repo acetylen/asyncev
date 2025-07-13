@@ -19,8 +19,8 @@ def funcref(f: Coroutine) -> ReferenceType[Coroutine]:
 
 @dataclass
 class BaseEvent:
-    def __init__(self):
-        if type(self) == BaseEvent:
+    def __post_init__(self):
+        if type(self) is BaseEvent:
             raise Exception("BaseEvent should not be instantiated directly")
 
 
