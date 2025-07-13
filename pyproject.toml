@@ -1,0 +1,9 @@
+[project]
+name = "asyncev"
+description = "Asynchronous named events with no dependencies"
+authors = [
+  { name = "Emil Tylén", email = ""}
+]
+readme="README.md"
+license_files = ["LICENSE"]
+python_requires = ">=3.8"
