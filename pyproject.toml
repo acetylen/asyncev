@@ -1,0 +1,29 @@
+[project]
+name = "asyncev"
+version = "1.0"
+description = "Asynchronous named events with no dependencies"
+authors = [
+  { name = "Emil Tylén", email = ""}
+]
+readme="README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/acetylen/asyncev"
+Issues = "https://github.com/acetylen/asyncev/issues"
+
+[dependency-groups]
+dev = [
+    "tox>=4.25.0",
+    "tox-uv>=1.13.1",
+]
+
+[tool.tox]
+requires = ["tox>4.19"]
+env_list = ["3.13", "3.12", "3.11", "3.10", "3.9"]
+
+[tool.tox.env_run_base]
+description = "run under {base_python}"
+commands = [["python", "-m", "unittest"]]
