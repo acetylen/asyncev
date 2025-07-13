@@ -1,9 +1,12 @@
 [project]
 name = "asyncev"
+version = "1.0"
 description = "Asynchronous named events with no dependencies"
 authors = [
-  { name = "Emil Tylén", email = ""}
+  { name = "Emil Tylén", email = "a@b.c"}
 ]
 readme="README.md"
-license_files = ["LICENSE"]
-python_requires = ">=3.8"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.8"
+
