@@ -3,15 +3,16 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from inspect import iscoroutinefunction, ismethod
-from typing import Any, Awaitable, Callable, List, Type, TypeVar
-from weakref import WeakMethod, ref
+from collections.abc import Awaitable
+from typing import Any, Callable
+from weakref import ReferenceType, WeakMethod, ref
 
-Coroutine = Callable[..., Awaitable]
+Coroutine = Callable[..., Awaitable[Any]]
 
 log = logging.getLogger(__name__)
 
 
-def funcref(f: Callable):
+def funcref(f: Coroutine) -> ReferenceType[Coroutine]:
     if ismethod(f):
         return WeakMethod(f)
     return ref(f)
@@ -22,9 +23,6 @@ class BaseEvent:
     def __init__(self):
         if type(self) == BaseEvent:
             raise Exception("BaseEvent should not be instantiated directly")
-
-
-Event = TypeVar("Event", bound=BaseEvent)
 
 
 class AsyncEv:
@@ -38,28 +36,28 @@ class AsyncEv:
         self.writelock = asyncio.Lock()
         # FIXME: Writelock can't be used in non-async methods...
 
-    def bind(self, event: Type[Event], listener: Coroutine):
-        """Bind listener to a named event."""
+    def bind(self, event: type[BaseEvent], listener: Coroutine):
+        """Bind {listener} to a named {event}."""
         if not iscoroutinefunction(listener):
             raise TypeError("Event listeners must be async!")
 
         log.debug("Adding binding: %r -> %s", event, listener)
         self.events[event].add(funcref(listener))
 
-    def unbind(self, event: Type[Event], listener: Coroutine):
-        """Unbind listener from event.
+    def unbind(self, event: type[BaseEvent], listener: Coroutine):
+        """Unbind {listener} from {event}.
         Will error if event or listener doesn't exist."""
         log.debug("Removing binding: %r -> %s", event, listener)
 
         self.events[event] -= {funcref(listener)}
 
-    async def _emit(self, event: Event):
+    async def _emit(self, event: BaseEvent):
         """Call all valid {event} handlers with provided args.
 
         If any reference has decayed, trigger a pruning session
         after the event has been emitted.
         """
-        callbacks = []
+        callbacks: list[Awaitable[Any]] = []
         decayed = 0
         t = type(event)
         async with self.writelock:
@@ -70,6 +68,7 @@ class AsyncEv:
                     continue
                 log.debug("Queueing callback %r(%r)", task, event)
                 callbacks.append(task(event))
+
         log.debug("Emit %s!", t.__name__)
         results = await asyncio.gather(*callbacks)
         if decayed:
@@ -77,19 +76,21 @@ class AsyncEv:
             asyncio.create_task(self._prune(t))
         return results
 
-    def emit(self, event: Event):
-        """Emit an event, passing any provided arguments to all listeners."""
+    def emit(self, event: BaseEvent):
+        """Emit {event}, triggering all listeners as soon as possible."""
         log.debug("Scheduling emit(%s)", event)
         asyncio.create_task(self._emit(event))
 
-    async def gather(self, event: Event) -> List[Any]:
-        """emit an event, wait for all handlers to run, and return the result."""
+    async def gather(self, event: BaseEvent) -> list[Any]:
+        """emit {event}, wait for all listeners to run, and return the result."""
 
         log.debug("Gather(%s)", event)
         return await self._emit(event)
 
-    def gather_for(self, event: Event, func: Callable):
-        """Emit an event, wait for all handlers to run, and send them to func."""
+    def gather_for(self, event: BaseEvent, func: Callable[..., None]):
+        """Emit {event}, wait for all listeners, and send their results to {func}.
+        This is useful for passing results to synchronous functions.
+        """
 
         async def _callback():
             results = await self.gather(event)
@@ -98,14 +99,14 @@ class AsyncEv:
         log.debug("Scheduling gather_for(%s)", event)
         asyncio.create_task(_callback())
 
-    async def _prune(self, event: Type[Event]):
+    async def _prune(self, event: type[BaseEvent]):
         """Find and remove dead handlers for {event}"""
         diff = {r for r in self.events[event] if r() is None}
         async with self.writelock:
             self.events[event] -= diff
 
-    async def wait_for(self, event: Type[Event]) -> Event:
-        """Sleep until event occurs.
+    async def wait_for(self, event: type[BaseEvent]) -> BaseEvent:
+        """Sleep until {event} occurs.
 
         wait_for creates a temporary handler for the given event that gets
         removed after the event has occurred once. This is more expensive
@@ -114,9 +115,9 @@ class AsyncEv:
         """
         ev = asyncio.Event()
 
-        out: Event
+        out: BaseEvent = None
 
-        async def wait_trigger(event: Event):
+        async def wait_trigger(event: BaseEvent):
             nonlocal out
             out = event
             ev.set()
@@ -125,7 +126,3 @@ class AsyncEv:
         await ev.wait()
         self.unbind(event, wait_trigger)
         return out
-
-
-# Default event handler exposed through the methods in event.__init__
-_default = AsyncEv()
