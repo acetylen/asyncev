@@ -11,7 +11,7 @@ yield_for = 0.01  # how long to allow the event handler to run after setup
 log = logging.getLogger(__name__)
 
 @dataclass
-class ValueEvent(asyncev.BaseEvent):
+class ValueEvent(asyncev.Event):
     value: str
 
 class EventTest(IsolatedAsyncioTestCase):
