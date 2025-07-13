@@ -8,7 +8,7 @@ authors = [
 readme="README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [dependency-groups]
 dev = [
@@ -18,7 +18,7 @@ dev = [
 
 [tool.tox]
 requires = ["tox>4.19"]
-env_list = ["3.13", "3.12", "3.11", "3.10", "3.9", "3.8"]
+env_list = ["3.13", "3.12", "3.11", "3.10", "3.9"]
 
 [tool.tox.env_run_base]
 description = "run under {base_python}"
