@@ -10,3 +10,16 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.8"
 
+[dependency-groups]
+dev = [
+    "tox>=4.25.0",
+    "tox-uv>=1.13.1",
+]
+
+[tool.tox]
+requires = ["tox>4.19"]
+env_list = ["3.13", "3.12", "3.11", "3.10", "3.9", "3.8"]
+
+[tool.tox.env_run_base]
+description = "run under {base_python}"
+commands = [["python", "-m", "unittest"]]
