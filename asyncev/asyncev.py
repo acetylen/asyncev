@@ -17,12 +17,17 @@ def funcref(f: Coroutine) -> ReferenceType[Coroutine]:
         return WeakMethod(f)
     return ref(f)
 
+class AsyncEvError(Exception):
+    pass
 
 @dataclass
 class BaseEvent(ABC):
     def __post_init__(self):
         if type(self) is BaseEvent:
             raise Exception("BaseEvent should not be instantiated directly")
+
+class SENTINEL(BaseEvent):
+    pass
 
 
 class AsyncEv:
@@ -118,7 +123,7 @@ class AsyncEv:
         """
         ev = asyncio.Event()
 
-        out: BaseEvent = None
+        out: Union[BaseEvent, SENTINEL] = SENTINEL()
 
         async def wait_trigger(event: BaseEvent):
             nonlocal out
@@ -128,4 +133,6 @@ class AsyncEv:
         self.bind(event, wait_trigger)
         await ev.wait()
         self.unbind(event, wait_trigger)
+        if type(out) is SENTINEL:
+            raise AsyncEvError("wait_for triggered without passing an event! this is a bug!")
         return out
