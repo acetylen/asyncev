@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 from weakref import ref, WeakMethod
 import asyncio
 import logging
@@ -10,9 +11,11 @@ yield_for = 0.01  # how long to allow the event handler to run after setup
 
 log = logging.getLogger(__name__)
 
+
 @dataclass
 class ValueEvent(asyncev.Event):
-    value: str
+    value: Any
+
 
 class EventTest(IsolatedAsyncioTestCase):
     def setUp(self):

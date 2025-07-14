@@ -3,19 +3,13 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from inspect import iscoroutinefunction, ismethod
-from collections.abc import Awaitable
-from typing import Any, Callable
+from collections.abc import Coroutine
+from typing import Any, Callable, Optional, TypeVar, Union
 from weakref import ReferenceType, WeakMethod, ref
 
-Coroutine = Callable[..., Awaitable[Any]]
 
 log = logging.getLogger(__name__)
 
-
-def funcref(f: Coroutine) -> ReferenceType[Coroutine]:
-    if ismethod(f):
-        return WeakMethod(f)
-    return ref(f)
 
 class AsyncEvError(Exception):
     pass
@@ -29,6 +23,20 @@ class BaseEvent(ABC):
 class SENTINEL(BaseEvent):
     pass
 
+EventType = TypeVar("EventType", bound=BaseEvent)
+Listener = Callable[[BaseEvent], Coroutine[None, None, Any]]
+Reference = Union[ReferenceType[Listener], WeakMethod[Listener]]
+
+
+def funcref(
+    listener: Listener,
+    callback: Optional[Callable[[Reference], None]] = None,
+) -> Reference:
+    """Unified way to create a reference to a function or a bound method."""
+    if ismethod(listener):
+        return WeakMethod(listener, callback)
+    return ref(listener, callback)
+
 
 class AsyncEv:
     """
@@ -37,11 +45,11 @@ class AsyncEv:
     """
 
     def __init__(self):
-        self.events: dict[type[BaseEvent], set[ReferenceType[Coroutine]]] = {}
+        self.events: dict[type[BaseEvent], set[Reference]] = {}
         self.writelock: dict[type[BaseEvent], asyncio.Lock] = {}
         # FIXME: Writelock can't be used in non-async methods...
 
-    def bind(self, event: type[BaseEvent], listener: Coroutine):
+    def bind(self, event: type[BaseEvent], listener: Listener):
         """Bind {listener} to a named {event}."""
         if not iscoroutinefunction(listener):
             raise TypeError("Event listeners must be async!")
@@ -52,7 +60,7 @@ class AsyncEv:
             self.writelock[event] = asyncio.Lock()
         self.events[event].add(funcref(listener))
 
-    def unbind(self, event: type[BaseEvent], listener: Coroutine):
+    def unbind(self, event: type[BaseEvent], listener: Listener):
         """Unbind {listener} from {event}.
         Will error if event or listener doesn't exist."""
         log.debug("Removing binding: %r -> %s", event, listener)
