@@ -163,6 +163,7 @@ class EventTest(IsolatedAsyncioTestCase):
         self.assertTrue(self.method_called)
 
     async def test_prune(self):
+        """Check that listeners are cleaned up when they go out of scope"""
         class BindObject:
             def __init__(this, eventhandler):
                 eventhandler.bind(ValueEvent, this.bound_method)
@@ -171,16 +172,19 @@ class EventTest(IsolatedAsyncioTestCase):
             async def bound_method(self, ev: ValueEvent):
                 self.arg_value = ev.value
 
+        # check that there are no listeners already
         self.assertNotIn(ValueEvent, self.eventhandler.events)
 
         obj = BindObject(self.eventhandler)
 
+        # check that our listener has been added
         self.assertIn(ValueEvent, self.eventhandler.events)
         self.assertIn(
             WeakMethod(obj.bound_method), self.eventhandler.events[ValueEvent]
         )
 
         del obj
+        # check that the listener was immediately deleted
         self.assertSetEqual(self.eventhandler.events[ValueEvent], set())
 
     def test_non_async_handler(self):
