@@ -171,16 +171,17 @@ class EventTest(IsolatedAsyncioTestCase):
             async def bound_method(self, ev: ValueEvent):
                 self.arg_value = ev.value
 
+        self.assertNotIn(ValueEvent, self.eventhandler.events)
+
         obj = BindObject(self.eventhandler)
 
         self.assertIn(ValueEvent, self.eventhandler.events)
+        self.assertIn(
+            WeakMethod(obj.bound_method), self.eventhandler.events[ValueEvent]
+        )
 
         del obj
-        self.assertIsNone(list(self.eventhandler.events[ValueEvent])[0]())
-
-        self.eventhandler.emit(ValueEvent(2)) #prune is only called after emit
-        await asyncio.sleep(yield_for)
-        self.assertFalse(self.eventhandler.events[ValueEvent])
+        self.assertSetEqual(self.eventhandler.events[ValueEvent], set())
 
     def test_non_async_handler(self):
         def non_async_handler(ev: ValueEvent):

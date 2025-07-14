@@ -58,39 +58,27 @@ class AsyncEv:
         if event not in self.events:
             self.events[event] = set()
             self.writelock[event] = asyncio.Lock()
-        self.events[event].add(funcref(listener))
+
+        self.events[event].add(
+            funcref(listener, lambda r: self.events[event].discard(r))
+        )
 
     def unbind(self, event: type[BaseEvent], listener: Listener):
         """Unbind {listener} from {event}.
         Will error if event or listener doesn't exist."""
         log.debug("Removing binding: %r -> %s", event, listener)
 
-        self.events[event] -= {funcref(listener)}
+        self.events[event].discard(funcref(listener))
 
     async def _emit(self, event: BaseEvent):
-        """Call all valid {event} handlers with provided args.
-
-        If any reference has decayed, trigger a pruning session
-        after the event has been emitted.
-        """
-        callbacks: list[Awaitable[Any]] = []
-        decayed = 0
+        """Call all valid {event} handlers with the provided events."""
         t = type(event)
         async with self.writelock[t]:
-            for taskref in self.events[t]:
-                task = taskref()
-                if task is None:
-                    decayed += 1
-                    continue
-                log.debug("Queueing callback %r(%r)", task, event)
-                callbacks.append(task(event))
+            # the weakref callback _should_ ensure that no Nones are left in the list.
+            callbacks = [task()(event) for task in self.events[t]] # type: ignore
 
         log.debug("Emit %s!", t.__name__)
-        results = await asyncio.gather(*callbacks)
-        if decayed:
-            log.debug("%d of %r's handlers have decayed.", decayed, t.__name__)
-            asyncio.create_task(self._prune(t))
-        return results
+        return await asyncio.gather(*callbacks)
 
     def emit(self, event: BaseEvent):
         """Emit {event}, triggering all listeners as soon as possible."""
@@ -114,12 +102,6 @@ class AsyncEv:
 
         log.debug("Scheduling gather_for(%s)", event)
         asyncio.create_task(_callback())
-
-    async def _prune(self, event: type[BaseEvent]):
-        """Find and remove dead handlers for {event}"""
-        diff = {r for r in self.events[event] if r() is None}
-        async with self.writelock[event]:
-            self.events[event] -= diff
 
     async def wait_for(self, event: type[BaseEvent]) -> BaseEvent:
         """Sleep until {event} occurs.
