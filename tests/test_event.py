@@ -25,7 +25,12 @@ class EventTest(IsolatedAsyncioTestCase):
         self.arg_input = "argument value"
 
     async def test_bound_function(self):
+        """Test that
+        * a function bound to an event receives events of that type,
+        * unbinding removes the function from the listeners and no longer receives events.
+        """
 
+        # check that there are no listeners for our event
         self.assertNotIn(ValueEvent, self.eventhandler.events)
 
         async def function(ev: ValueEvent):
@@ -33,68 +38,95 @@ class EventTest(IsolatedAsyncioTestCase):
 
         self.eventhandler.bind(ValueEvent, function)
 
+        # check that there is now a bound listener for the event.
         self.assertIn(ValueEvent, self.eventhandler.events)
         self.assertIn(ref(function), self.eventhandler.events[ValueEvent])
 
+        # check that the before-value is correct
+        self.assertIsNone(self.arg_value)
+
+        # check that the bound listener receives the event.
         self.eventhandler.emit(ValueEvent(self.arg_input))
         await asyncio.sleep(yield_for)
-
         self.assertEqual(self.arg_input, self.arg_value)
 
+        # check that unbinding makes the event not arrive to the listener.
         self.eventhandler.unbind(ValueEvent, function)
-
-        self.assertNotIn(ref(function), self.eventhandler.events[ValueEvent])
+        self.arg_value = None
+        self.eventhandler.emit(ValueEvent(self.arg_input))
+        await asyncio.sleep(yield_for)
+        self.assertIsNone(self.arg_value)
 
     async def test_bound_method(self):
+        """Same as test_bound_function, but for methods."""
 
+        # check that there are no listeners for our event
         self.assertNotIn(ValueEvent, self.eventhandler.events)
 
+        # set up an class that binds to an event on instantiation
         class BindObject:
             def __init__(this, eventhandler):
-                eventhandler.bind(ValueEvent, this.bound_method)
+                eventhandler.bind(ValueEvent, this.listener)
                 this.arg_value = None
 
-            async def bound_method(self, ev: ValueEvent):
+            async def listener(self, ev: ValueEvent):
                 self.arg_value = ev.value
 
         obj = BindObject(self.eventhandler)
 
-        self.assertIn(
-            ValueEvent, self.eventhandler.events,
-        )
-        self.assertIn(
-            WeakMethod(obj.bound_method), self.eventhandler.events[ValueEvent],
-        )
+        # check that there is now a bound listener for the event.
+        self.assertIn(ValueEvent, self.eventhandler.events)
+        self.assertIn(WeakMethod(obj.listener), self.eventhandler.events[ValueEvent])
 
-        self.assertIsNone(obj.arg_value)
+        # check that the before-value is correct
+        self.assertIsNone(self.arg_value)
 
+        # check that the bound listener receives the event.
         self.eventhandler.emit(ValueEvent(self.arg_input))
         await asyncio.sleep(yield_for)
-
         self.assertEqual(self.arg_input, obj.arg_value)
 
+        # check that unbinding makes the event not arrive to the listener.
+        self.eventhandler.unbind(ValueEvent, obj.listener)
+        self.arg_value = None
+        self.eventhandler.emit(ValueEvent(self.arg_input))
+        await asyncio.sleep(yield_for)
+        self.assertIsNone(self.arg_value)
 
     async def test_wait_for(self):
+        """test that wait_for cleans up after itself"""
+
         async def waiter():
+            self.method_called = True
             ev = await self.eventhandler.wait_for(ValueEvent)
             self.arg_value = ev.value
 
+        # check that there are no registered listeners for the event
         self.assertNotIn(ValueEvent, self.eventhandler.events)
+        # check before-values
         self.assertFalse(self.method_called)
+        self.assertNotEqual(self.arg_input, self.arg_value)
 
+        # check that the listener has started and is blocking
         task = asyncio.create_task(waiter())
+        await asyncio.sleep(yield_for)
+        self.assertTrue(self.method_called)
+        self.assertNotEqual(self.arg_input, self.arg_value)
 
-        self.assertFalse(self.method_called)
+        # check that the listener has received the event
         self.eventhandler.emit(ValueEvent(self.arg_input))
         await asyncio.sleep(yield_for)
+        self.assertEqual(self.arg_value, self.arg_input)
 
-        self.assertTrue(self.arg_value, self.arg_input)
-        self.assertFalse(self.eventhandler.events[ValueEvent])  # check if empty
-        await task
+        # check that the wait_for ephemeral listener has been removed
+        self.assertFalse(self.eventhandler.events[ValueEvent])
+        await task  # clean up waiter
 
     async def test_gather(self):
-        def factory(i):
-            async def f(ev: ValueEvent):
+        """test that gather returns all results"""
+
+        def factory(i: int):
+            async def f(ev: ValueEvent) -> int:
                 return i + ev.value
 
             return f
@@ -109,7 +141,7 @@ class EventTest(IsolatedAsyncioTestCase):
         self.assertEqual(sorted(results), list(range(10, 20)))
 
     async def test_gather_for(self):
-        def factory(i):
+        def factory(i: int):
             async def f(ev: ValueEvent):
                 return i + ev.value
 
@@ -151,7 +183,7 @@ class EventTest(IsolatedAsyncioTestCase):
         self.assertFalse(self.eventhandler.events[ValueEvent])
 
     def test_non_async_handler(self):
-        def non_async_handler():
+        def non_async_handler(ev: ValueEvent):
             pass
 
         with self.assertRaises(TypeError):
