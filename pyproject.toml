@@ -1,6 +1,6 @@
 [project]
 name = "asyncev"
-version = "1.0"
+version = "1.0a"
 description = "Asynchronous named events with no dependencies"
 authors = [
   { name = "Emil Tylén", email = ""}
@@ -9,6 +9,21 @@ readme="README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.9"
+keywords = ["library", "async", "asyncio", "event"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming language :: Python :: 3 :: Only",
+  "Programming language :: Python :: 3.13",
+  "Programming language :: Python :: 3.12",
+  "Programming language :: Python :: 3.11",
+  "Programming language :: Python :: 3.10",
+  "Programming language :: Python :: 3.9",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries",
+  "Typing :: Typed"
+]
 
 [project.urls]
 Homepage = "https://github.com/acetylen/asyncev"

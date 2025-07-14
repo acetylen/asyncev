@@ -1,7 +1,13 @@
 AsyncEv: asynchronous event objects
 ===================================
 
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/asyncev)
+
 AsyncEv leverages `asyncio` to create events that can be subscribed to and waited for.
+
+## Installation
+
+    pip install asyncev
 
 ## Usage
 
@@ -12,7 +18,7 @@ from dataclasses import dataclass
 
 # Create an event
 @dataclass
-class MyEvent(asyncev.BaseEvent):
+class MyEvent(asyncev.Event):
     value: str
 
 # Create a handler
@@ -28,8 +34,14 @@ async def main():
 asyncio.run(main())
 ```
 
-## Testing
+## Development
 
-```shell
-$ python -m unittest
-```
+Recommended tooling is [`uv`](https://astral.sh/uv).
+
+### Building
+
+    $ uv build
+
+### Testing
+
+    $ uv run tox
