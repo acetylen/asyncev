@@ -1,3 +1,4 @@
+from abc import ABC
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -18,7 +19,7 @@ def funcref(f: Coroutine) -> ReferenceType[Coroutine]:
 
 
 @dataclass
-class BaseEvent:
+class BaseEvent(ABC):
     def __post_init__(self):
         if type(self) is BaseEvent:
             raise Exception("BaseEvent should not be instantiated directly")
