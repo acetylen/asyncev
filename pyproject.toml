@@ -49,4 +49,5 @@ description = "run under {base_python}"
 commands = [["python", "-m", "unittest"]]
 
 [tool.pyright]
+pythonVersion = "3.9"
 reportExplicitAny = false
