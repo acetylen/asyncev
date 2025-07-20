@@ -36,6 +36,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "ruff>=0.12.4",
     "tox>=4.25.0",
     "tox-uv>=1.13.1",
 ]
@@ -51,3 +52,19 @@ commands = [["python", "-m", "unittest"]]
 [tool.pyright]
 pythonVersion = "3.9"
 reportExplicitAny = false
+
+[tool.ruff]
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "dist",
+]
+
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["E", "F"]
