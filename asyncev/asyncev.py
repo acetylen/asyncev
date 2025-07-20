@@ -1,12 +1,12 @@
-from abc import ABC
+
 import asyncio
 import logging
+from abc import ABC
+from collections.abc import Coroutine
 from dataclasses import dataclass
 from inspect import iscoroutinefunction, ismethod
-from collections.abc import Coroutine
 from typing import Any, Callable, Optional, TypeVar, Union
 from weakref import ReferenceType, WeakMethod, ref
-
 
 log = logging.getLogger(__name__)
 
