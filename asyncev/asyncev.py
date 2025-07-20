@@ -11,17 +11,12 @@ from weakref import ReferenceType, WeakMethod, ref
 log = logging.getLogger(__name__)
 
 
-class AsyncEvError(Exception):
-    pass
-
 @dataclass
 class BaseEvent(ABC):
     def __post_init__(self):
         if type(self) is BaseEvent:
             raise Exception("BaseEvent should not be instantiated directly")
 
-class SENTINEL(BaseEvent):
-    pass
 
 EventType = TypeVar("EventType", bound=BaseEvent)
 Listener = Callable[[BaseEvent], Coroutine[None, None, Any]]
@@ -111,18 +106,13 @@ class AsyncEv:
         than registering a proper event handler, so should probably only be
         used for events that don't occur very often.
         """
-        ev = asyncio.Event()
+        future = asyncio.Future()
 
-        out: Union[BaseEvent, SENTINEL] = SENTINEL()
-
-        async def wait_trigger(event: BaseEvent):
-            nonlocal out
-            out = event
-            ev.set()
+        async def wait_trigger(event: EventType) -> None:
+            future.set_result(event)
 
         self.bind(event, wait_trigger)
-        await ev.wait()
-        self.unbind(event, wait_trigger)
-        if type(out) is SENTINEL:
-            raise AsyncEvError("wait_for triggered without passing an event! this is a bug!")
-        return out
+        try:
+            return await future
+        finally:
+            self.unbind(event, wait_trigger)
