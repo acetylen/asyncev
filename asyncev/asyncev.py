@@ -1,3 +1,10 @@
+"""asyncev: Named events for asyncio.
+
+Asyncev is an event-dispatcher that allows developers to communicate between
+objects using event objects with arbitrary payloads. A function or method
+which takes an event object can be designated a listener by using bind(), which
+will make it run every time an event is emit()ed.
+"""
 
 import asyncio
 import logging
@@ -34,8 +41,8 @@ def funcref(
 
 
 class AsyncEv:
-    """
-    AsyncEv uses the asyncio event loop to create Tk-style named events.
+    """AsyncEv uses the asyncio event loop to create Tk-style named events.
+
     Events can be emitted, awaited, and bound to.
     """
 
@@ -81,13 +88,13 @@ class AsyncEv:
         asyncio.create_task(self._emit(event))
 
     async def gather(self, event: BaseEvent) -> list[Any]:
-        """emit {event}, wait for all listeners to run, and return the result."""
-
+        """Emit {event}, wait for all listeners to run, and return the result."""
         log.debug("Gather(%s)", event)
         return await self._emit(event)
 
     def gather_for(self, event: BaseEvent, func: Callable[..., None]):
         """Emit {event}, wait for all listeners, and send their results to {func}.
+
         This is useful for passing results to synchronous functions.
         """
 
@@ -99,7 +106,7 @@ class AsyncEv:
         asyncio.create_task(_callback())
 
     async def wait_for(self, event: type[BaseEvent]) -> BaseEvent:
-        """Sleep until {event} occurs.
+        """Sleep until an {event} occurs, then return it.
 
         wait_for creates a temporary handler for the given event that gets
         removed after the event has occurred once. This is more expensive
