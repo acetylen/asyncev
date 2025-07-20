@@ -49,7 +49,6 @@ class AsyncEv:
     def __init__(self):
         self.events: dict[type[BaseEvent], set[Reference]] = {}
         self.writelock: dict[type[BaseEvent], asyncio.Lock] = {}
-        # FIXME: Writelock can't be used in non-async methods...
 
     def bind(self, event: type[BaseEvent], listener: Listener):
         """Bind {listener} to a named {event}."""
