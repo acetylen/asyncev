@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 class ValueEvent(asyncev.Event):
     value: Any
 
+
 class BindObject:
     def __init__(self, eventhandler: asyncev.AsyncEv, id: int = None):
         eventhandler.bind(ValueEvent, self.listener)
@@ -174,9 +175,7 @@ class EventTest(IsolatedAsyncioTestCase):
 
         # check that our listener has been added
         self.assertIn(ValueEvent, self.eventhandler.events)
-        self.assertIn(
-            WeakMethod(obj.listener), self.eventhandler.events[ValueEvent]
-        )
+        self.assertIn(WeakMethod(obj.listener), self.eventhandler.events[ValueEvent])
 
         del obj
         # check that the listener was immediately deleted
