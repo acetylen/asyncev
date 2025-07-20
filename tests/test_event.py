@@ -156,7 +156,7 @@ class EventTest(IsolatedAsyncioTestCase):
             funcs.append(f)
             self.eventhandler.bind(ValueEvent, f)
 
-        def gatherer(results):
+        def gatherer(results: list[int]):
             self.method_called = True
             self.assertEqual(sorted(results), list(range(10, 20)))
 
@@ -187,3 +187,58 @@ class EventTest(IsolatedAsyncioTestCase):
 
         with self.assertRaises(TypeError):
             self.eventhandler.bind(ValueEvent, non_async_handler)
+
+    async def test_n_listeners(self):
+        """Send event to n listeners, unbind half of them, and send again"""
+
+        n_events = 100
+        # check that there are no listeners for our event
+        self.assertNotIn(ValueEvent, self.eventhandler.events)
+
+        objs = [BindObject(self.eventhandler, n) for n in range(n_events)]
+
+        # check that there is now a bound listener for the event.
+        self.assertIn(ValueEvent, self.eventhandler.events)
+        self.assertTrue(
+            all(
+                WeakMethod(obj.listener) in self.eventhandler.events[ValueEvent]
+                for obj in objs
+            )
+        )
+
+        # check that the before-value is correct
+        self.assertTrue(all(obj.arg_value is None for obj in objs))
+
+        # check that the bound listeners receive the event.
+        arg_input = "value A"
+        for _ in range(100):
+            self.eventhandler.emit(ValueEvent(arg_input))
+            await asyncio.sleep(yield_for)
+            self.assertTrue(
+                all(obj.arg_value == f"{arg_input} {obj.id}" for obj in objs)
+            )
+
+            for obj in objs:  # reset value
+                obj.arg_value = None
+
+        for i in range(n_events // 2):  # unbind first 500 listeners
+            self.eventhandler.unbind(ValueEvent, objs[i].listener)
+
+        arg_input = "value B"  # change the input to make sure there's no old value left
+        for _ in range(100):
+            self.eventhandler.emit(ValueEvent(arg_input))
+            await asyncio.sleep(yield_for)
+
+            # check that only the upper half of the listeners got the event
+            self.assertTrue(
+                all(objs[i].arg_value is None for i in range(n_events // 2))
+            )
+            self.assertTrue(
+                all(
+                    objs[i].arg_value == f"{arg_input} {objs[i].id}"
+                    for i in range(n_events // 2, n_events)
+                )
+            )
+
+            for obj in objs:  # reset value
+                obj.arg_value = None
