@@ -16,6 +16,17 @@ log = logging.getLogger(__name__)
 class ValueEvent(asyncev.Event):
     value: Any
 
+class BindObject:
+    def __init__(self, eventhandler: asyncev.AsyncEv, id: int = None):
+        eventhandler.bind(ValueEvent, self.listener)
+        self.id = id
+        self.arg_value = None
+
+    async def listener(self, ev: ValueEvent):
+        if self.id is not None:
+            self.arg_value = f"{ev.value} {self.id}"
+        else:
+            self.arg_value = f"{ev.value}"
 
 class EventTest(IsolatedAsyncioTestCase):
     def setUp(self):
@@ -62,15 +73,6 @@ class EventTest(IsolatedAsyncioTestCase):
 
         # check that there are no listeners for our event
         self.assertNotIn(ValueEvent, self.eventhandler.events)
-
-        # set up an class that binds to an event on instantiation
-        class BindObject:
-            def __init__(this, eventhandler):
-                eventhandler.bind(ValueEvent, this.listener)
-                this.arg_value = None
-
-            async def listener(self, ev: ValueEvent):
-                self.arg_value = ev.value
 
         obj = BindObject(self.eventhandler)
 
@@ -142,10 +144,10 @@ class EventTest(IsolatedAsyncioTestCase):
 
     async def test_gather_for(self):
         def factory(i: int):
-            async def f(ev: ValueEvent):
+            async def func(ev: ValueEvent):
                 return i + ev.value
 
-            return f
+            return func
 
         funcs = []
         for i in range(10):
@@ -164,13 +166,6 @@ class EventTest(IsolatedAsyncioTestCase):
 
     async def test_prune(self):
         """Check that listeners are cleaned up when they go out of scope"""
-        class BindObject:
-            def __init__(this, eventhandler):
-                eventhandler.bind(ValueEvent, this.bound_method)
-                this.arg_value = None
-
-            async def bound_method(self, ev: ValueEvent):
-                self.arg_value = ev.value
 
         # check that there are no listeners already
         self.assertNotIn(ValueEvent, self.eventhandler.events)
@@ -180,7 +175,7 @@ class EventTest(IsolatedAsyncioTestCase):
         # check that our listener has been added
         self.assertIn(ValueEvent, self.eventhandler.events)
         self.assertIn(
-            WeakMethod(obj.bound_method), self.eventhandler.events[ValueEvent]
+            WeakMethod(obj.listener), self.eventhandler.events[ValueEvent]
         )
 
         del obj
